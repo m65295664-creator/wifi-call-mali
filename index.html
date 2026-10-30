@@ -3,52 +3,172 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WiFi Call Mali - Appel Gratuit</title>
-<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<title>WiFi Call Mali V6 - Recherche</title>
 <style>
-body{font-family:sans-serif;background:#0f172a;color:white;text-align:center;padding:20px}
-.card{background:#1e293b;padding:20px;border-radius:15px;max-width:400px;margin:auto}
-button{background:#22c55e;color:black;padding:15px 25px;border:none;border-radius:10px;font-size:18px;font-weight:bold;width:100%;margin:10px 0}
-input{padding:12px;width:90%;border-radius:10px;border:none;margin:10px 0;color:black}
-#myId{background:#334155;padding:10px;border-radius:10px;word-break:break-all}
-audio{width:100%;margin-top:15px}
+*{box-sizing:border-box}
+body{background:#0f172a;color:white;font-family:sans-serif;margin:0}
+header{background:#1e293b;padding:10px;position:sticky;top:0;z-index:20}
+.search-bar{display:flex;gap:8px;align-items:center;background:#0f172a;padding:8px 12px;border-radius:25px;border:2px solid #334155;margin-top:8px}
+.search-bar input{flex:1;background:transparent;border:none;color:white;outline:none;font-size:15px}
+.search-bar span{font-size:18px}
+.tab{display:flex;background:#1e293b;position:sticky;top:78px;z-index:10}
+.tab button{flex:1;padding:12px;border:none;background:transparent;color:#94a3b8;font-size:12px}
+.tab button.active{background:#3b82f6;color:white}
+.screen{display:none;padding:12px;max-width:500px;margin:0 auto}
+.screen.active{display:block}
+.card{background:#1e293b;padding:16px;border-radius:16px;margin-top:10px}
+input,select,textarea{width:100%;padding:12px;border-radius:10px;border:2px solid #334155;background:#0f172a;color:white;margin-top:6px}
+label{font-size:12px;color:#94a3b8;margin-top:8px;display:block;text-align:left}
+button.main{width:100%;padding:14px;border-radius:12px;border:none;font-weight:bold;margin-top:8px}
+.green{background:#22c55e;color:white}.blue{background:#3b82f6;color:white}.orange{background:#f59e0b}.red{background:#ef4444;color:white}.gray{background:#334155;color:white}
+#myIdBox{font-size:24px;font-weight:bold;color:#22c55e;border:2px dashed #22c55e;padding:10px;border-radius:10px;text-align:center}
+video{width:100%;background:#000;border-radius:12px;height:170px;margin-top:8px}
+table{width:100%;border-collapse:collapse;margin-top:8px}
+th,td{border:1px solid #334155;padding:6px;font-size:12px;text-align:left}
+th{background:#0f172a;color:#22c55e}
+.call-controls{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.result-item{background:#0f172a;padding:10px;border-radius:10px;margin-top:6px;border-left:4px solid #22c55e;text-align:left}
 </style>
 </head>
 <body>
-<h1>📞 WiFi Call Mali</h1>
-<div class="card">
-<p>Ton ID personnel:</p>
-<div id="myId">Chargement...</div>
-<button onclick="copyId()">📋 Copier mon ID</button>
-<hr>
-<input id="remoteId" placeholder="Colle l'ID de ton ami ici">
-<button onclick="callFriend()" style="background:#3b82f6;color:white">📞 APPELER</button>
-<button onclick="hangup()" style="background:#ef4444;color:white">❌ RACCROCHER</button>
-<audio id="remoteAudio" autoplay controls></audio>
-<p id="status">En attente...</p>
+
+<header>
+<div style="display:flex;justify-content:space-between;align-items:center">
+<h2 style="margin:0;font-size:16px">📞 WiFi Call Mali</h2>
+<span id="miniId" style="color:#22c55e;font-size:11px"></span>
 </div>
+<!-- BARRE DE RECHERCHE EN HAUT -->
+<div class="search-bar">
+<span>🔍</span>
+<input id="globalSearch" type="search" placeholder="Rechercher nom, ID, pays, email..." oninput="rechercherGlobal()">
+<span onclick="document.getElementById('globalSearch').value='';rechercherGlobal()" style="cursor:pointer">✖️</span>
+</div>
+<div id="searchResults" style="margin-top:8px;display:none"></div>
+</header>
+
+<div class="tab">
+<button id="t1" class="active" onclick="showTab('profil')">👤 Profil</button>
+<button id="t2" onclick="showTab('appel')">📞 Appel</button>
+<button id="t3" onclick="showTab('video')">🎥 Vidéo</button>
+<button id="t4" onclick="showTab('dash')">📊 Dash</button>
+</div>
+
+<!-- PROFIL -->
+<div id="profil" class="screen active">
+<div class="card">
+<h3 style="margin:0">👤 Mon Profil</h3>
+<label>Prénom *</label><input id="prenom">
+<label>Nom Famille *</label><input id="nomfamille">
+<label>Email *</label><input id="email" type="email">
+<label>Pays</label><select id="pays"><option>Mali 🇲🇱</option><option>Sénégal 🇸🇳</option><option>Guinée 🇬🇳</option><option>Côte d'Ivoire 🇨🇮</option><option>Burkina Faso 🇧🇫</option><option>France 🇫🇷</option><option>Autre</option></select>
+<label>Adresse</label><input id="adresse">
+<label>Description</label><textarea id="desc" rows="2"></textarea>
+<label>🔔 Sonnerie</label><select id="ringtoneSelect" onchange="changerSonnerie()"><option value="classic">Classique Orange Money</option><option value="balafon">Balafon Mali</option><option value="kora">Kora Douce</option><option value="custom">Ma musique perso</option></select>
+<button class="main orange" onclick="testerSonnerie()">▶️ Tester Sonnerie</button>
+<input type="file" id="customFile" accept="audio/*" style="display:none" onchange="uploadSonnerie(this)">
+<button class="main green" onclick="sauverProfil()">💾 Enregistrer</button>
+</div>
+<div class="card"><div id="myIdBox">...</div><button class="main blue" onclick="copierID()">📋 Copier ID Fixe</button></div>
+</div>
+
+<!-- APPEL -->
+<div id="appel" class="screen">
+<div class="card" style="text-align:center">
+<h3>📞 Appel WiFi</h3>
+<input id="friendId" placeholder="ID ami" inputmode="numeric" style="text-align:center;font-size:20px;letter-spacing:2px">
+<div id="callStatus" style="margin-top:10px;padding:10px;background:#0f172a;border-radius:10px">✅ Prêt</div>
+<button class="main green" id="btnAppeler" onclick="lancerAppel()" style="border-radius:50px;padding:20px;font-size:18px">📞 Appeler (sonne)</button>
+<div class="call-controls" id="inCallControls" style="display:none">
+<button class="main gray" id="btnMute" onclick="toggleMute()">🔇 Mute</button>
+<button class="main gray" id="btnSpeaker" onclick="toggleSpeaker()">🔊 Haut-Parleur OFF</button>
+<button class="main blue" onclick="startVideoFromCall()">🎥 Vidéo</button>
+<button class="main red" onclick="raccrocher()">📴 Raccrocher</button>
+</div>
+<audio id="dialTone" loop></audio><audio id="ringtonePlayer" loop></audio>
+</div>
+<div class="card">
+<h4>📇 Contacts récents (recherche)</h4>
+<div id="recentContacts"></div>
+</div>
+</div>
+
+<!-- VIDEO -->
+<div id="video" class="screen">
+<div class="card">
+<h3>🎥 Tableau Appel Vidéo</h3>
+<table><tr><th>Vue</th><th>Status</th></tr><tr><td>Toi</td><td id="localStatus">Éteinte</td></tr><tr><td>Ami</td><td id="remoteStatus">Attente</td></tr></table>
+<video id="localVideo" autoplay muted playsinline></video>
+<video id="remoteVideo" autoplay playsinline></video>
+<div class="call-controls">
+<button class="main green" onclick="startVideo()">📷 Caméra</button>
+<button class="main gray" id="btnSpeakerVideo" onclick="toggleSpeaker()">🔊 HP</button>
+<button class="main red" onclick="raccrocher()">Raccrocher</button>
+</div>
+</div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dash" class="screen">
+<div class="card"><h3>📊 Tableau Description</h3><table id="userTable"><tr><th>Champ</th><th>Valeur</th></tr></table><button class="main blue" onclick="rafraichirDashboard()">🔄 Rafraîchir</button></div>
+</div>
+
 <script>
-let peer = new Peer(Math.floor(100000+Math.random()*900000).toString());
-let currentCall = null;
-peer.on('open', id => { document.getElementById('myId').innerText = id; document.getElementById('status').innerText = "Prêt à recevoir des appels"; });
-peer.on('call', call => {
-  document.getElementById('status').innerText = "Appel entrant...";
-  navigator.mediaDevices.getUserMedia({audio:true}).then(stream => {
-    call.answer(stream);
-    call.on('stream', remoteStream => { document.getElementById('remoteAudio').srcObject = remoteStream; document.getElementById('status').innerText = "En communication!"; });
-  });
-});
-function callFriend(){
-  let remoteId = document.getElementById('remoteId').value;
-  if(!remoteId) return alert("Colle l'ID de ton ami");
-  navigator.mediaDevices.getUserMedia({audio:true}).then(stream => {
-    let call = peer.call(remoteId, stream);
-    currentCall = call;
-    call.on('stream', remoteStream => { document.getElementById('remoteAudio').srcObject = remoteStream; document.getElementById('status').innerText = "En appel avec " + remoteId; });
-  });
+// ID FIXE V6
+function getIDFixe(){let id=localStorage.getItem('wifiCallMali_ID_Fixe_V6');if(!id){id=Math.floor(100000+Math.random()*900000).toString();localStorage.setItem('wifiCallMali_ID_Fixe_V6',id);}return id;}
+let MON_ID=getIDFixe();myIdBox.innerText=MON_ID;miniId.innerText='ID:'+MON_ID;
+
+function showTab(n){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.tab button').forEach(b=>b.classList.remove('active'));document.getElementById(n).classList.add('active');document.getElementById('t'+({profil:1,appel:2,video:3,dash:4}[n])).classList.add('active');if(n==='dash')rafraichirDashboard();}
+
+// PROFIL
+function sauverProfil(){let d={prenom:prenom.value,nomfamille:nomfamille.value,email:email.value,pays:pays.value,adresse:adresse.value,desc:desc.value,id:MON_ID,date:new Date().toLocaleString()};if(!d.prenom||!d.nomfamille||!d.email){alert('Remplis Prénom, Nom, Email');return;}d.nom=d.prenom+' '+d.nomfamille;localStorage.setItem('wifiCallMali_Profil',JSON.stringify(d));ajouterAuxContacts(d);alert('✅ Profil enregistré!');rafraichirDashboard();}
+(function charger(){let s=localStorage.getItem('wifiCallMali_Profil');if(!s)return;let d=JSON.parse(s);prenom.value=d.prenom;nomfamille.value=d.nomfamille;email.value=d.email;pays.value=d.pays;adresse.value=d.adresse;desc.value=d.desc;})();
+
+function rafraichirDashboard(){let s=localStorage.getItem('wifiCallMali_Profil');let t=document.getElementById('userTable');if(!s){t.innerHTML='<tr><th>Champ</th><th>Valeur</th></tr><tr><td colspan=2>Aucun profil</td></tr>';return;}let d=JSON.parse(s);t.innerHTML=`<tr><th>Champ</th><th>Valeur</th></tr><tr><td>ID Fixe</td><td><b>${d.id}</b></td></tr><tr><td>Prénom</td><td>${d.prenom}</td></tr><tr><td>Nom Famille</td><td>${d.nomfamille}</td></tr><tr><td>Nom</td><td>${d.nom}</td></tr><tr><td>Email</td><td>${d.email}</td></tr><tr><td>Pays</td><td>${d.pays}</td></tr><tr><td>Adresse</td><td>${d.adresse}</td></tr><tr><td>Description</td><td>${d.desc}</td></tr>`; afficherContacts();}
+
+// CONTACTS + RECHERCHE GLOBALE
+function ajouterAuxContacts(d){let contacts=JSON.parse(localStorage.getItem('wifiCallMali_Contacts')||'[]');if(!contacts.find(c=>c.id===d.id))contacts.unshift(d);if(contacts.length>20)contacts.pop();localStorage.setItem('wifiCallMali_Contacts',JSON.stringify(contacts));}
+function afficherContacts(){let div=document.getElementById('recentContacts');let contacts=JSON.parse(localStorage.getItem('wifiCallMali_Contacts')||'[]');if(contacts.length===0){div.innerHTML='<p style="font-size:12px;opacity:0.6">Aucun contact. Crée ton profil d abord.</p>';return;}div.innerHTML=contacts.map(c=>`<div class="result-item"><b>${c.nom}</b> - ${c.id}<br><small>${c.pays} | ${c.email}</small><br><button onclick="document.getElementById('friendId').value='${c.id}';showTab('appel')" style="margin-top:4px;padding:4px 10px;border-radius:6px;border:none;background:#3b82f6;color:white">📞 Appeler</button></div>`).join('');}
+afficherContacts();
+
+// BARRE DE RECHERCHE EN HAUT - FILTRE GLOBAL
+function rechercherGlobal(){
+  let q=document.getElementById('globalSearch').value.toLowerCase().trim();
+  let resultsDiv=document.getElementById('searchResults');
+  if(!q){resultsDiv.style.display='none';resultsDiv.innerHTML='';return;}
+  let contacts=JSON.parse(localStorage.getItem('wifiCallMali_Contacts')||'[]');
+  let profil=JSON.parse(localStorage.getItem('wifiCallMali_Profil')||'null');
+  let all=[...contacts]; if(profil && !all.find(c=>c.id===profil.id)) all.unshift(profil);
+  
+  let filtres=all.filter(c=> 
+    (c.nom&&c.nom.toLowerCase().includes(q)) ||
+    (c.prenom&&c.prenom.toLowerCase().includes(q)) ||
+    (c.nomfamille&&c.nomfamille.toLowerCase().includes(q)) ||
+    (c.id&&c.id.includes(q)) ||
+    (c.pays&&c.pays.toLowerCase().includes(q)) ||
+    (c.email&&c.email.toLowerCase().includes(q)) ||
+    (c.adresse&&c.adresse.toLowerCase().includes(q))
+  );
+  
+  if(filtres.length===0){resultsDiv.innerHTML='<div style="padding:10px;font-size:12px">Aucun résultat pour "'+q+'"</div>';}
+  else{
+    resultsDiv.innerHTML=filtres.map(c=>`<div class="result-item"><b>${c.nom||c.prenom}</b> (${c.id})<br><small>${c.pays} - ${c.email}</small><br><button onclick="document.getElementById('friendId').value='${c.id}';showTab('appel');document.getElementById('globalSearch').value='';rechercherGlobal()" style="padding:4px 10px;background:#22c55e;border:none;border-radius:6px;color:white;margin-top:4px">📞 Appeler</button></div>`).join('');
+  }
+  resultsDiv.style.display='block';
 }
-function hangup(){ if(currentCall) currentCall.close(); document.getElementById('remoteAudio').srcObject = null; document.getElementById('status').innerText = "Appel terminé"; }
-function copyId(){ navigator.clipboard.writeText(document.getElementById('myId').innerText); alert("ID copié! Envoie-le à ton ami sur WhatsApp"); }
+
+// SON + HP + APPEL
+const SONNERIES={classic:"https://cdn.pixabay.com/audio/2022/03/10/audio_c8c8a73467.mp3",balafon:"https://www.soundjay.com/african/african-drum-01.mp3",kora:"https://www.soundjay.com/misc/bell-ringing-05.mp3"};
+let isSpeakerOn=false,isMuted=false,isCalling=false;
+function changerSonnerie(){let c=ringtoneSelect.value;localStorage.setItem('wifiCallMali_Ringtone',c);if(c==='custom')customFile.click();else{dialTone.src=SONNERIES[c];ringtonePlayer.src=SONNERIES[c];}}
+function testerSonnerie(){ringtonePlayer.play();setTimeout(()=>ringtonePlayer.pause(),3000);}
+function uploadSonnerie(i){let f=i.files[0];if(!f)return;let r=new FileReader();r.onload=e=>{localStorage.setItem('wifiCallMali_Ringtone_Custom',e.target.result);dialTone.src=e.target.result;ringtonePlayer.src=e.target.result;};r.readAsDataURL(f);}
+(function(){let s=localStorage.getItem('wifiCallMali_Ringtone')||'classic';ringtoneSelect.value=s;dialTone.src=SONNERIES[s]||SONNERIES.classic;ringtonePlayer.src=dialTone.src;})();
+function copierID(){navigator.clipboard.writeText(MON_ID);alert('ID copié: '+MON_ID);}
+function lancerAppel(){let f=friendId.value.trim();if(!f){alert('ID ami');return;}isCalling=true;callStatus.innerHTML='📞 Appel vers '+f+'... Ça sonne Orange Money 🔔';btnAppeler.style.display='none';inCallControls.style.display='grid';dialTone.play().catch(()=>{});setTimeout(()=>{if(isCalling){callStatus.innerHTML='✅ Connecté avec '+f;dialTone.pause();}},5000);}
+function raccrocher(){isCalling=false;dialTone.pause();ringtonePlayer.pause();callStatus.innerHTML='📴 Terminé';btnAppeler.style.display='block';inCallControls.style.display='none';stopVideo();setTimeout(()=>callStatus.innerHTML='✅ Prêt',1500);}
+function toggleSpeaker(){isSpeakerOn=!isSpeakerOn;btnSpeaker.innerText=isSpeakerOn?'🔊 HP ON':'🔊 HP OFF';btnSpeaker.style.background=isSpeakerOn?'#22c55e':'#334155';let bv=document.getElementById('btnSpeakerVideo');if(bv){bv.innerText=isSpeakerOn?'🔊 HP ON':'🔊 HP OFF';bv.style.background=isSpeakerOn?'#22c55e':'#334155';}}
+function toggleMute(){isMuted=!isMuted;btnMute.innerText=isMuted?'🔇 Muet ON':'🔇 Mute';btnMute.style.background=isMuted?'#ef4444':'#334155';}
+let stream=null;async function startVideo(){try{stream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});localVideo.srcObject=stream;localStatus.innerText='Allumée ✅';}catch(e){alert('Caméra refusée');}}function stopVideo(){if(stream)stream.getTracks().forEach(t=>t.stop());localVideo.srcObject=null;localStatus.innerText='Éteinte';}function startVideoFromCall(){showTab('video');startVideo();}
 </script>
 </body>
 </html>
