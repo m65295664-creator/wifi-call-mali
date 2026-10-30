@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WiFi Call Mali - Appel Gratuit</title>
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<style>
+body{font-family:sans-serif;background:#0f172a;color:white;text-align:center;padding:20px}
+.card{background:#1e293b;padding:20px;border-radius:15px;max-width:400px;margin:auto}
+button{background:#22c55e;color:black;padding:15px 25px;border:none;border-radius:10px;font-size:18px;font-weight:bold;width:100%;margin:10px 0}
+input{padding:12px;width:90%;border-radius:10px;border:none;margin:10px 0;color:black}
+#myId{background:#334155;padding:10px;border-radius:10px;word-break:break-all}
+audio{width:100%;margin-top:15px}
+</style>
+</head>
+<body>
+<h1>📞 WiFi Call Mali</h1>
+<div class="card">
+<p>Ton ID personnel:</p>
+<div id="myId">Chargement...</div>
+<button onclick="copyId()">📋 Copier mon ID</button>
+<hr>
+<input id="remoteId" placeholder="Colle l'ID de ton ami ici">
+<button onclick="callFriend()" style="background:#3b82f6;color:white">📞 APPELER</button>
+<button onclick="hangup()" style="background:#ef4444;color:white">❌ RACCROCHER</button>
+<audio id="remoteAudio" autoplay controls></audio>
+<p id="status">En attente...</p>
+</div>
+<script>
+let peer = new Peer(Math.floor(100000+Math.random()*900000).toString());
+let currentCall = null;
+peer.on('open', id => { document.getElementById('myId').innerText = id; document.getElementById('status').innerText = "Prêt à recevoir des appels"; });
+peer.on('call', call => {
+  document.getElementById('status').innerText = "Appel entrant...";
+  navigator.mediaDevices.getUserMedia({audio:true}).then(stream => {
+    call.answer(stream);
+    call.on('stream', remoteStream => { document.getElementById('remoteAudio').srcObject = remoteStream; document.getElementById('status').innerText = "En communication!"; });
+  });
+});
+function callFriend(){
+  let remoteId = document.getElementById('remoteId').value;
+  if(!remoteId) return alert("Colle l'ID de ton ami");
+  navigator.mediaDevices.getUserMedia({audio:true}).then(stream => {
+    let call = peer.call(remoteId, stream);
+    currentCall = call;
+    call.on('stream', remoteStream => { document.getElementById('remoteAudio').srcObject = remoteStream; document.getElementById('status').innerText = "En appel avec " + remoteId; });
+  });
+}
+function hangup(){ if(currentCall) currentCall.close(); document.getElementById('remoteAudio').srcObject = null; document.getElementById('status').innerText = "Appel terminé"; }
+function copyId(){ navigator.clipboard.writeText(document.getElementById('myId').innerText); alert("ID copié! Envoie-le à ton ami sur WhatsApp"); }
+</script>
+</body>
+</html>
